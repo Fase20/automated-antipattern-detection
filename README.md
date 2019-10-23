@@ -25,4 +25,4 @@ If using Linux operating system replace the first line of the "storm_CTMC.sh" sc
 4. The "config" folder ("res.config") contains the configuration files where the user can specify internal, external and system paramaters whose change will affect the detection of anti-patterns
 
 ## Re-creating the experiements
-The tool-generated graphs from the evaluation section of the paper can be found [here], placed in the "evaluation_results" folder. In order to re-create them, perform the refactoring actions listed in our paper.
+The tool-generated graphs from the evaluation section of the paper can be found [here](https://github.com/Fase20/automated-antipattern-detection/tree/master/evaluation_results), placed in the "evaluation_results" folder. In order to re-create them, perform the refactoring actions listed in our paper.
