@@ -1,0 +1,39 @@
+R{"droppedRequests"}=? [ C<=T ]/T
+
+R{"served"}=? [ C<=T ]/T
+
+R{"processingTime"}=? [ C<=T ]/R{"served"}=? [ C<=T ]
+
+(R{"qLen"}=? [ S ]/nthreads+1)*R{"processingTime"}=? [ C<=T ]/R{"served"}=? [ C<=T ]
+
+(R{"qLen"}=? [ S ]/nthreads+1)*R{"taTime"}=? [ C<=T ]/R{"servedTA"}=? [ C<=T ]
+
+(R{"served"}=? [ C<=T ]-R{"extFails"}=? [ C<=T ])/(R{"served"}=? [ C<=T ]+R{"droppedRequests"}=? [ C<=T ])
+
+R{"TAcost"}=? [ C<=T ] / R{"numOfReqsHandled"}=? [C<=T]
+
+R{"extCompCost"}=? [ C<=T ] / R{"numOfReqsHandled"}=? [C<=T]
+
+R{"overallCost"}=? [ C<=T ] / R{"numOfReqsHandled"}=? [C<=T]
+
+R{"MWcount"}=?[F "StatesForCount"]
+
+R{"FAcount"}=?[F "StatesForCount"]
+
+R{"Ordercount"}=?[F "StatesForCount"]
+
+R{"servedTA"}=?[F "StatesForCount"]
+
+P=?["MWTAOrNoPath" U "MWTAOrNoPath_END"]
+
+P=?["MWTAalarmPath" U "MWTAalarmPath_END"]
+
+P=?["FAOrNoPath" U "FAOrNoPath_END"]
+
+R{"MWcount"}=?[C<=T]/T
+
+R{"FAcount"}=?[C<=T]/T
+
+R{"Ordercount"}=?[C<=T]/T
+
+R{"servedTA"}=?[C<=T]/T
