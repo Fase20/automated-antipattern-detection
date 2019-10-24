@@ -24,5 +24,5 @@ If using Linux operating system replace the first line of the "storm_CTMC.sh" sc
 3. After the successful completion of the verification phase, multiple graphs will appear in the "graphs" folder, one of each anti-pattern type (i.e. BLOB, CPS, P&F)  
 4. The "config" folder ("res.config") contains the configuration files where the user can specify internal, external and system paramaters whose change will affect the detection of anti-patterns
 
-## Re-producing the experiements
+## Re-producing the experiments
 The tool-generated graphs from the evaluation section of the paper can be found [here](https://github.com/Fase20/automated-antipattern-detection/tree/master/evaluation_results), placed in the "evaluation_results" folder. Additionally, the models used for every scenario can be found here, under the "evaluation_models" folder.
