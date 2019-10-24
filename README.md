@@ -1,4 +1,4 @@
-This repository was specifically created to support the double-blind submission of a research paper. Therefore, it only hosts the version of the automated tool for the detection of anti-patterns in our running example, which was used for the evaluation of our approach submitted in [FASE 2020](https://www.etaps.org/2020/fase) and will not receive any maintenance. 
+This repository is specifically created to support the double-blind submission of a research paper. Therefore, it only hosts the developed tool to automatically detect performance anti-patterns and the obtained experimental results for reproducibility. 
 
 # Automated Anti-pattern Detection
 
@@ -21,7 +21,7 @@ If using Linux operating system replace the first line of the "storm_CTMC.sh" sc
 ### Usage
 1. Running the "mainGen.java" as Java Application will initiate the anti-pattern detection procedures and the generation of the "FX_System.sm" CTMC model, under "res.models" 
 2. The model will automatically be verified using Storm based on the already specified properties in "script_CTMC.sh" for a wide range of operational profile parameters 
-3. After the successful completion of the verification phase, multiple graphs will appear in the "graphs" folder, one of each anti-pattern type (i.e. BLOB, CPS, P&F)  
+3. After the successful completion of the verification phase, multiple graphs will appear in the "graphs" folder, one of each anti-pattern type (i.e. BLOB, Concurrent Processing Systems, Pipe and Filter) 
 4. The "config" folder ("res.config") contains the configuration files where the user can specify internal, external and system paramaters whose change will affect the detection of anti-patterns
 
 ## Re-producing the experiments
