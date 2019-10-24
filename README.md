@@ -22,7 +22,7 @@ If using Linux operating system replace the first line of the "storm_CTMC.sh" sc
 1. Running the "mainGen.java" as Java Application will initiate the antipattern detection procedures and the generation of the "FX_System.sm" CTMC model, under "res.models" 
 2. The model will automatically be verified using Storm based on the already specified properties in "script_CTMC.sh" for a wide range of operational profile parameters 
 3. After the successful completion of the verification phase, multiple graphs will appear in the "graphs" folder, one of each antipattern type (i.e. BLOB, Concurrent Processing Systems, Pipe and Filter) 
-4. The "config" folder ("res.config") contains the configuration files where the user can specify internal, external and system paramaters whose change will affect the detection of anti-patterns
+4. The "config" folder ("res.config") contains the configuration files where the user can specify internal, external and system paramaters whose change will affect the detection of antipatterns
 
 ## Re-producing the experiments
 The tool-generated graphs from the evaluation section of the paper can be found [here](https://github.com/Fase20/automated-antipattern-detection/tree/master/evaluation_results), placed in the "evaluation_results" folder. Additionally, the models used for every scenario can be found here, under the "evaluation_models" folder.
