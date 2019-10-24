@@ -1,4 +1,4 @@
-This repository is specifically created to support the double-blind submission of a research paper. Therefore, it only hosts the developed tool to automatically detect performance anti-patterns and the obtained experimental results for reproducibility. 
+This repository is specifically created to support the double-blind submission of a research paper. Therefore, it only hosts the developed tool to automatically detect performance antipatterns and the obtained experimental results for reproducibility. 
 
 # Automated Antipattern Detection
 
