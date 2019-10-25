@@ -4,6 +4,9 @@ import java.awt.Color;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,16 +34,109 @@ public class MainGen {
 	public static int typeOfRun;
 	public static int typeOfAP;
 	public static int selection=4;
+	public static int cases;
+	public static int experiment;
+	public static int startAP;
+	public static int endAP;
 	public static HashMap<Color, String> listOfantipatterns = new HashMap<Color, String>();
 	public static List<Coordinates> coordinateList = new ArrayList<Coordinates>();
 	private static final Pattern COMMA_DELIMITER = Pattern.compile(",\\s*");
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws ConfigurationException, IOException {
+		//create the graphs folder if it does not exist
+		String fileName = "./graphs";
 
-				PropertiesConfiguration config;		
+        Path path = Paths.get(fileName);
+        if (!Files.exists(path)) {
+            Files.createDirectory(path);
+        }
+		PropertiesConfiguration config;		
+		for (int exp=1; exp<=5; exp++) {
+			experiment=exp;
+			if (exp==1) {
+				config = new PropertiesConfiguration("./res/config/FX_System.cfg");
+				config.setProperty("FARate", "1000/40.02");
+				config.setProperty("MWrate", "1000/50.21");
+				config.setProperty("ta1Rate", 3);
+				config.setProperty("n_TA", 1);
+				config.setProperty("nthreads", 1);
+				config.save();
+				config = new PropertiesConfiguration("./res/config/marketWatch.cfg");
+				config.setProperty("operation", "SEQ");
+				config.save();
+			}
+			else if (exp==2) {
+				config = new PropertiesConfiguration("./res/config/FX_System.cfg");
+				config.setProperty("ta1Rate", 6);
+				config.save();
+			}
+			else if (exp==3) {
+				config = new PropertiesConfiguration("./res/config/FX_System.cfg");
+				config.setProperty("ta1Rate", 3);
+				config.setProperty("n_TA", 2);
+				config.setProperty("nthreads", 2);
+				config.save();
+			}
+			else if (exp==4) {
+				config = new PropertiesConfiguration("./res/config/FX_System.cfg");
+				config.setProperty("n_TA", 1);
+				config.setProperty("nthreads", 1);
+				config.setProperty("MWrate", "1000/500");
+				config.save();
+				config = new PropertiesConfiguration("./res/config/marketWatch.cfg");
+				config.setProperty("operation", "PAR");
+				config.save();
+			}
+			else {
+				config = new PropertiesConfiguration("./res/config/marketWatch.cfg");
+				config.setProperty("operation", "SEQ");
+				config.save();
+				config = new PropertiesConfiguration("./res/config/FX_System.cfg");
+				config.setProperty("FARate", "1000/400");
+				config.setProperty("MWrate", "1000/50.21");
+				config.save();
+			}
 
+			for (int caseN=1; caseN<=3; caseN++) {
+				cases=caseN;
+				if (caseN==1) {
+					config = new PropertiesConfiguration("./res/config/FX_System.cfg");
+					config.setProperty("pObjNotSat", 0.78);
+					config.setProperty("pObjSatisfied", 0.21);
+					config.save();
+				}
+				else if (caseN==2) {
+					config = new PropertiesConfiguration("./res/config/FX_System.cfg");
+					config.setProperty("pObjNotSat", 0.01);
+					config.setProperty("pObjSatisfied", 0.48);
+					config.save();
+				}
+				else {
+					config = new PropertiesConfiguration("./res/config/FX_System.cfg");
+					config.setProperty("pObjNotSat", 0.01);
+					config.setProperty("pObjSatisfied", 0.98);
+					config.save();
+				}
 				try {
-					for (int ap=1; ap<=3; ap++) {
+					if (experiment==1) {
+						startAP=1;
+						endAP=3;
+					}
+					else {
+						if (caseN==1) {
+							startAP=1;
+							endAP=2;
+						}
+						else if (caseN==2) {
+							startAP=1;
+							endAP=1;
+						}
+						else {
+							startAP=3;
+							endAP=3;
+						}
+					}
+					for (int ap=startAP; ap<=endAP; ap++) {
 						typeOfAP=ap;
 						if (ap==1) {
 							config = new PropertiesConfiguration("./res/config/FX_System.cfg");
@@ -154,15 +250,8 @@ public class MainGen {
 					// TODO Auto-generated catch block
 					e2.printStackTrace();
 				}
-//			}
-//		});
-//
-//		//frame properties and visualisation 
-//		frame.setSize(300, 210);
-//		frame.setResizable(false);
-//		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-//		frame.setLocationRelativeTo(null);
-//		frame.setVisible(true);
+			}
+		}
 	}
 
 	public static void createGraph(List<Coordinates> coordinateList) {
@@ -182,9 +271,6 @@ public class MainGen {
 
 		// Series
 
-		//Map<String, List<Coordinates>> newList = coordinateList.stream()
-		//       .collect(Collectors.groupingBy(Coordinates::getName));
-
 		Map<String, Set<Coordinates>> nameToCoordinates = coordinateList.stream()
 				.flatMap(
 						c -> COMMA_DELIMITER.splitAsStream(c.getName())
@@ -193,22 +279,13 @@ public class MainGen {
 
 		nameToCoordinates.remove("No Antipatterns Detected!");
 
-		//System.out.println(nameToCoordinates);
-
 		double i=-0.009;
-		//double xPlusi=0;
 
-		//XYSeries series;
 		for (Map.Entry<String, Set<Coordinates>> serie : nameToCoordinates.entrySet()) {
 			List<Double> xData = new ArrayList<>();
 			List<Double> yData = new ArrayList<>();
 
 			for (Coordinates coord : serie.getValue()) {
-
-				//		    	double xPlusi = coord.getX() + i;
-				//		    	BigDecimal bdxPlusi = new BigDecimal(xPlusi);
-				//		    	bdxPlusi = bdxPlusi.setScale(2, RoundingMode.HALF_UP);
-				//		    	double dxPlusi = bdxPlusi.doubleValue();
 
 				xData.add(coord.getX()+i);
 				yData.add(coord.getY());
@@ -304,53 +381,203 @@ public class MainGen {
 			}
 		}
 		try {
-			if (typeOfAP==1) {
-				if (typeOfRun==1)
-					BitmapEncoder.saveBitmap(chart, "./graphs/BLOB_0.65", BitmapFormat.JPG);
-				else if (typeOfRun==2)
-					BitmapEncoder.saveBitmap(chart, "./graphs/BLOB_0.715", BitmapFormat.JPG);
-				else if (typeOfRun==3)
-					BitmapEncoder.saveBitmap(chart, "./graphs/BLOB_0.78", BitmapFormat.JPG);
-				else if (typeOfRun==4)
-					BitmapEncoder.saveBitmap(chart, "./graphs/BLOB_0.85", BitmapFormat.JPG);
-				else
-					BitmapEncoder.saveBitmap(chart, "./graphs/BLOB_0.95", BitmapFormat.JPG);
+			if (experiment==1) {
+				if (cases==1) {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/IS-BLOB-caseA", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/IS-CPS-caseA", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/IS-P&F-caseA", BitmapFormat.JPG);
+					}
+				}
+				else if (cases==2) {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/IS-BLOB-caseB", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/IS-CPS-caseB", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/IS-P&F-caseB", BitmapFormat.JPG);
+					}
+				}
+				else {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/IS-BLOB-caseC", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/IS-CPS-caseC", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/IS-P&F-caseC", BitmapFormat.JPG);
+					}
+				}
 			}
-			else if (typeOfAP==2) {
-				if (typeOfRun==1)
-					BitmapEncoder.saveBitmap(chart, "./graphs/CPS_0.65", BitmapFormat.JPG);
-				else if (typeOfRun==2)
-					BitmapEncoder.saveBitmap(chart, "./graphs/CPS_0.715", BitmapFormat.JPG);
-				else if (typeOfRun==3)
-					BitmapEncoder.saveBitmap(chart, "./graphs/CPS_0.78", BitmapFormat.JPG);
-				else if (typeOfRun==4)
-					BitmapEncoder.saveBitmap(chart, "./graphs/CPS_0.85", BitmapFormat.JPG);
-				else
-					BitmapEncoder.saveBitmap(chart, "./graphs/CPS_0.95", BitmapFormat.JPG);
+			else if (experiment==2) {
+				if (cases==1) {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R1-BLOB-caseA", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R1-CPS-caseA", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R1-P&F-caseA", BitmapFormat.JPG);
+					}
+				}
+				else if (cases==2) {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R1-BLOB-caseB", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R1-CPS-caseB", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R1-P&F-caseB", BitmapFormat.JPG);
+					}
+				}
+				else {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R1-BLOB-caseC", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R1-CPS-caseC", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R1-P&F-caseC", BitmapFormat.JPG);
+					}
+				}
+
+			}
+			else if (experiment==3) {
+				if (cases==1) {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R2-BLOB-caseA", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R2-CPS-caseA", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R2-P&F-caseA", BitmapFormat.JPG);
+					}
+				}
+				else if (cases==2) {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R2-BLOB-caseB", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R2-CPS-caseB", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R2-P&F-caseB", BitmapFormat.JPG);
+					}
+				}
+				else {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R2-BLOB-caseC", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R2-CPS-caseC", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R2-P&F-caseC", BitmapFormat.JPG);
+					}
+				}
+
+			}
+			else if (experiment==4) {
+				if (cases==1) {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R3-BLOB-caseA", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R3-CPS-caseA", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R3-P&F-caseA", BitmapFormat.JPG);
+					}
+				}
+				else if (cases==2) {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R3-BLOB-caseB", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R3-CPS-caseB", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R3-P&F-caseB", BitmapFormat.JPG);
+					}
+				}
+				else {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R3-BLOB-caseC", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R3-CPS-caseC", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R3-P&F-caseC", BitmapFormat.JPG);
+					}
+				}
+
 			}
 			else {
-				if (typeOfRun==1)
-					BitmapEncoder.saveBitmap(chart, "./graphs/P&F_0.65", BitmapFormat.JPG);
-				else if (typeOfRun==2)
-					BitmapEncoder.saveBitmap(chart, "./graphs/P&F_0.715", BitmapFormat.JPG);
-				else if (typeOfRun==3)
-					BitmapEncoder.saveBitmap(chart, "./graphs/P&F_0.78", BitmapFormat.JPG);
-				else if (typeOfRun==4)
-					BitmapEncoder.saveBitmap(chart, "./graphs/P&F_0.85", BitmapFormat.JPG);
-				else
-					BitmapEncoder.saveBitmap(chart, "./graphs/P&F_0.95", BitmapFormat.JPG);
+				if (cases==1) {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R4-BLOB-caseA", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R4-CPS-caseA", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R4-P&F-caseA", BitmapFormat.JPG);
+					}
+				}
+				else if (cases==2) {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R4-BLOB-caseB", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R4-CPS-caseB", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R4-P&F-caseB", BitmapFormat.JPG);
+					}
+				}
+				else {
+					if (typeOfAP==1) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R4-BLOB-caseC", BitmapFormat.JPG);
+
+					}
+					else if (typeOfAP==2) {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R4-CPS-caseC", BitmapFormat.JPG);
+					}
+					else {
+						BitmapEncoder.saveBitmap(chart, "./graphs/R4-P&F-caseC", BitmapFormat.JPG);
+					}
+				}
+
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-		//		Thread t = new Thread(new Runnable() {
-		//			@Override
-		//			public void run() {
-		//				new SwingWrapper<XYChart>(chart).displayChart();     
-		//			}
-		//
-		//		});
-		//		t.start();		
+		}		
 	}
 }
