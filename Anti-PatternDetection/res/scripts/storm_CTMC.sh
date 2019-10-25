@@ -170,13 +170,13 @@ taRate=$(grep -i 'ta1rate' "$DIR/../config/FX_System.cfg"  | cut -f2 -d'=' | bc)
 
 TotalNoInvoPerReq=$(bc <<< "scale=2;$var17+$var18+$var19+$var20")
 AverageNoInvoPerReq=$(bc <<< "scale=2;$TotalNoInvoPerReq/4")
-#threshold=$(bc <<< "scale=2;$AverageNoInvoPerReq*0.3")
-#AverageNoInvoPerReq=$(bc <<< "scale=2;$AverageNoInvoPerReq+$threshold")
+threshold=$(bc <<< "scale=2;$AverageNoInvoPerReq*0.3")
+AverageNoInvoPerReq=$(bc <<< "scale=2;$AverageNoInvoPerReq+$threshold")
 
 TotalNoInvoPerTimeUnit=$(bc <<< "scale=2;$answer13+$answer14+$answer15+$answer16")
 AverageNoInvoPerTimeUnit=$(bc <<< "scale=2;$TotalNoInvoPerTimeUnit/4")
-#threshold=$(bc <<< "scale=2;$AverageNoInvoPerTimeUnit*0.3")
-#AverageNoInvoPerTimeUnit=$(bc <<< "scale=2;$AverageNoInvoPerTimeUnit+$threshold")
+threshold=$(bc <<< "scale=2;$AverageNoInvoPerTimeUnit*0.3")
+AverageNoInvoPerTimeUnit=$(bc <<< "scale=2;$AverageNoInvoPerTimeUnit+$threshold")
 
 varMW=$(bc <<< "scale=2;$answer13/$MWrate")
 varFA=$(bc <<< "scale=2;$answer14/$FArate")
