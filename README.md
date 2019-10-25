@@ -15,8 +15,15 @@ This site contains the source code of our automated method's implementation, as 
 2. Download the [AntiPatternDetection](https://github.com/Fase20/automated-antipattern-detection) folder
 3. A fast and tested way to build and run the code, is to import it as an existing project in [Eclipse](https://www.eclipse.org/downloads/)
 
-#### Note:
-If using Linux operating system replace the first line of the "storm_CTMC.sh" script ```#!/bin/sh``` with ```#!/bin/bash```, located in the folder "res.scripts"
+#### Notes:
+1. If you try to import the project, following the above step 3, and receive an ```unbound classpath container``` error, simply follow the steps below:
+   - Right-click on the project folder and select "Properties"
+   - From the "Java Build Path" tab, select the ```JRE System Library``` option that has the error marker
+   - After selecting it, click on the edit button and a new window will appear
+   - Pick from the "Alternate JRE" dropdown list the option ```Java SE 11```
+   - Click "finish" on the first window and "apply and close" on the last remaining window
+   - The error should now be addressed 
+2. If using Linux operating system replace the first line of the "storm_CTMC.sh" script ```#!/bin/sh``` with ```#!/bin/bash```, located in the folder "res.scripts"
 
 ### Usage
 1. Running the "mainGen.java" as Java Application will initiate the antipattern detection procedures and the generation of the "FX_System.sm" CTMC model, under "res.models" 
