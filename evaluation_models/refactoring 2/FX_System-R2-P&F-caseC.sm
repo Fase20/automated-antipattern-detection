@@ -1,0 +1,199 @@
+ctmc
+
+const double pObjNotSat = 0.01;
+const double pObjSatisfied = 0.98;
+const double pObjNotSatHighVar = 1-pObjSatisfied-pObjNotSat;
+const double pExpertMode = 0.91;
+const double pFundamentalAnalysisMode = 1-pExpertMode;
+const double pEnterTrade = 0.91;
+const double MWsucc = 0.99;
+const double FASucc = 0.99;
+const double OrderSucc = 0.99;
+const double MWrate = 1000/50.21;
+const double FARate = 1000/40.01;
+const double OrderRate = 1000/52.38;
+const double MWcost = 5.022;
+const double FAcost = 17.3;
+const double Ordercost = 4.96;
+const double TAcost = 0;
+const double reqRate = 10;
+const int nthreads = 2;
+const double T = 10;
+const int MAX_QUEUE_SIZE = 10;
+const double ta1Rate = 3;
+const double ta2Rate = 3;
+const double alarmRate = 40;
+const double notifRate = 55;
+const double internalOpRate = 1000;
+
+module RequestQueue
+  q : [0..MAX_QUEUE_SIZE] init 0;
+
+  [NewReq]    true -> reqRate : (q'=min(q+1,MAX_QUEUE_SIZE)); // req arrival: increase req queue size (or drop request)
+  [ServeReq1] q>0 -> internalOpRate:(q'=q-1);                 // thread 1 serves request
+  [ServeReq2] q>0 -> internalOpRate:(q'=q-1);                 // thread 2 serves request
+endmodule
+
+rewards "droppedRequests"
+  [NewReq] q=MAX_QUEUE_SIZE : 1;
+endrewards
+
+rewards "numOfReqsHandled"
+  [NewReq] q<MAX_QUEUE_SIZE : 1;
+endrewards
+
+module Workflow1
+  s1 : [0..10] init 0;
+
+  // 1. Extract request from queue and establish request type
+  [ServeReq1] s1=0 -> pExpertMode:(s1'=1) + pFundamentalAnalysisMode:(s1'=9);
+
+  // 2. Handle "expert mode" request
+  // 2.1. Invoke external service(s) for the Market Watch operation
+  [MW1] s1=1 -> MWsucc*MWrate:(s1'=2) + (1-MWsucc)*MWrate:(s1'=10); 
+
+  // 2.2. Invoke internal component for the Technical Analysis operation
+  [TA1Invoke1] s1=2 -> 1:(s1'=3); // thread 1 invokes TA instance 1 if not in use
+  [TA2Invoke1] s1=2 -> 1:(s1'=4); // thread 1 invokes TA instance 2 if not in use
+  [TA1Exec1]   s1=3 -> pObjSatisfied:(s1'=7) + pObjNotSat:(s1'=1) + pObjNotSatHighVar:(s1'=5); // wait for TA to complete
+  [TA2Exec1]   s1=4 -> pObjSatisfied:(s1'=7) + pObjNotSat:(s1'=1) + pObjNotSatHighVar:(s1'=5); // wait for TA to complete
+
+  // 2.3. Invoke internal component for the Alarm operation
+  [Alarm1] s1=5 -> alarmRate:(s1'=6);
+
+  // 2.4. Done - successful outcome
+  [] s1=6 -> internalOpRate:(s1'=0);
+
+  // 2.5. Invoke external service(s) for the Order operation
+  [Order1] s1=7 -> OrderSucc*OrderRate:(s1'=8) + (1-OrderSucc)*OrderRate:(s1'=10);
+
+  // 2.6. Invoke internal component for the notification operation
+  [Notif1] s1=8 -> notifRate:(s1'=6);
+
+  // 3. Handle "fundamental analysis" request 
+  // 3.1. Invoke external service(s) for the Fundamental Analysis operation
+  [FA1] s1=9 -> FASucc*FARate*pEnterTrade:(s1'=7) + FASucc*FARate*(1-pEnterTrade):(s1'=6) + (1-FASucc)*FARate:(s1'=10); 
+  
+  // 4. Done - unsuccessful outcome (invocation of external service failed)
+  [] s1=10 -> internalOpRate:(s1'=0);
+endmodule
+
+// Other workflow threads
+module Workflow2 = Workflow1 [s1=s2, ServeReq1=ServeReq2, TA1Invoke1=TA1Invoke2, TA2Invoke1=TA2Invoke2, 
+                                                          TA1Exec1=TA1Exec2, TA2Exec1=TA2Exec2, MW1=MW2, Alarm1=Alarm2, Order1=Order2, Notif1=Notif2, FA1=FA2] endmodule
+// Internal component Technical Analysis, instance 1
+module TA1
+  t1 : [0..2] init 0;
+  [TA1Invoke1] t1=0 -> internalOpRate:(t1'=1);
+  [TA1Invoke2] t1=0 -> internalOpRate:(t1'=2);
+  [TA1Exec1]   t1=1 -> ta1Rate:(t1'=0);
+  [TA1Exec2]   t1=2 -> ta1Rate:(t1'=0);
+endmodule
+
+module TA2 = TA1 [t1=t2, TA1Invoke1=TA2Invoke1, TA1Invoke2=TA2Invoke2, 
+                         TA1Exec1=TA2Exec1,TA1Exec2=TA2Exec2, ta1Rate=ta2Rate] endmodule
+rewards "MWcount"
+  [MW1] true : 1;
+  [MW2] true : 1;
+endrewards
+
+rewards "Notifcount"
+  [Notif1] true : 1;
+  [Notif2] true : 1;
+endrewards
+
+rewards "Alarmcount"
+  [Alarm1] true : 1;
+  [Alarm2] true : 1;
+endrewards
+
+rewards "FAcount"
+  [FA1] true : 1;
+  [FA2] true : 1;
+endrewards
+
+rewards "Ordercount"
+  [Order1] s1=7 : 1;
+  [Order2] s2=7 : 1;
+endrewards
+
+label "StatesForCount" = (s1=6|s1=10|s2=6|s2=10);
+
+label "MWTAOrNoPath" = (s1=0|s1=1|s1=2|s1=3|s1=4|s1=7|s1=8);
+
+label "MWTAOrNoPath_END" = s1=8;
+
+label "MWTAalarmPath" = (s1=0|s1=1|s1=2|s1=4|s1=5);
+
+label "MWTAalarmPath_END" = s1=5;
+
+label "FAOrNoPath" = (s1=0|s1=9|s1=7|s1=8);
+
+label "FAOrNoPath_END" = s1=8;
+
+rewards "served"
+  [ServeReq1] true : 1;
+  [ServeReq2] true : 1;
+endrewards
+
+rewards "extFails"
+  s1=10 : 1;
+  s2=10 : 1;
+endrewards
+
+rewards "extCompCost"
+  [MW1] s1=1  : MWcost;
+  [Order1] s1=7  : Ordercost;
+  [FA1] s1=9  : FAcost;
+  [MW2] s2=1  : MWcost;
+  [Order2] s2=7  : Ordercost;
+  [FA2] s2=9  : FAcost;
+endrewards
+
+rewards "TAcost"
+  [TA1Invoke1] s1=2  : TAcost;
+  [TA1Invoke2] s2=2  : TAcost;
+  [TA2Invoke1] s1=2  : TAcost;
+  [TA2Invoke2] s2=2  : TAcost;
+endrewards
+
+rewards "overallCost"
+  [MW1] s1=1  : MWcost;
+  [Order1] s1=7  : Ordercost;
+  [FA1] s1=9  : FAcost;
+  [MW2] s2=1  : MWcost;
+  [Order2] s2=7  : Ordercost;
+  [FA2] s2=9  : FAcost;
+  [TA1Invoke1] s1=2  : TAcost;
+  [TA1Invoke2] s2=2  : TAcost;
+  [TA2Invoke1] s1=2  : TAcost;
+  [TA2Invoke2] s2=2  : TAcost;
+endrewards
+
+rewards "processingTime"
+  s1>0 : 1;
+  s2>0 : 1;
+endrewards
+
+rewards "idle"
+  s1=0 : 1;
+  s2=0 : 1;
+endrewards
+
+rewards "qLen"
+  true : q;
+endrewards
+
+rewards "servedTA"
+  [TA1Invoke1] true : 1;
+  [TA1Invoke2] true : 1;
+  [TA2Invoke1] true : 1;
+  [TA2Invoke2] true : 1;
+endrewards
+
+rewards "taTime"
+  s1=2 : 1;
+  s1=3 : 1;
+  s2=2 : 1;
+  s2=3 : 1;
+endrewards

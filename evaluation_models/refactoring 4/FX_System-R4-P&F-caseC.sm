@@ -1,0 +1,162 @@
+ctmc
+
+const double pObjNotSat = 0.01;
+const double pObjSatisfied = 0.98;
+const double pObjNotSatHighVar = 1-pObjSatisfied-pObjNotSat;
+const double pExpertMode = 0.91;
+const double pFundamentalAnalysisMode = 1-pExpertMode;
+const double pEnterTrade = 0.91;
+const double MWsucc = 0.99;
+const double FASucc = 0.99;
+const double OrderSucc = 0.99;
+const double MWrate = 1000/50.21;
+const double FARate = 1000/400;
+const double OrderRate = 1000/52.38;
+const double MWcost = 5.022;
+const double FAcost = 17.3;
+const double Ordercost = 4.96;
+const double TAcost = 0;
+const double reqRate = 10;
+const int nthreads = 1;
+const double T = 10;
+const int MAX_QUEUE_SIZE = 10;
+const double ta1Rate = 3;
+const double alarmRate = 40;
+const double notifRate = 55;
+const double internalOpRate = 1000;
+
+module RequestQueue
+  q : [0..MAX_QUEUE_SIZE] init 0;
+
+  [NewReq]    true -> reqRate : (q'=min(q+1,MAX_QUEUE_SIZE)); // req arrival: increase req queue size (or drop request)
+  [ServeReq1] q>0 -> internalOpRate:(q'=q-1);                 // thread 1 serves request
+endmodule
+
+rewards "droppedRequests"
+  [NewReq] q=MAX_QUEUE_SIZE : 1;
+endrewards
+
+rewards "numOfReqsHandled"
+  [NewReq] q<MAX_QUEUE_SIZE : 1;
+endrewards
+
+module Workflow1
+  s1 : [0..9] init 0;
+
+  // 1. Extract request from queue and establish request type
+  [ServeReq1] s1=0 -> pExpertMode:(s1'=1) + pFundamentalAnalysisMode:(s1'=8);
+
+  // 2. Handle "expert mode" request
+  // 2.1. Invoke external service(s) for the Market Watch operation
+  [] s1=1 -> MWsucc*MWrate:(s1'=2) + (1-MWsucc)*MWrate:(s1'=9); 
+
+  // 2.2. Invoke internal component for the Technical Analysis operation
+  [TA1Invoke1] s1=2 -> 1:(s1'=3); // thread 1 invokes TA instance 1 if not in use
+  [TA1Exec1]   s1=3 -> pObjSatisfied:(s1'=6) + pObjNotSat:(s1'=1) + pObjNotSatHighVar:(s1'=4); // wait for TA to complete
+
+  // 2.3. Invoke internal component for the Alarm operation
+  [] s1=4 -> alarmRate:(s1'=5);
+
+  // 2.4. Done - successful outcome
+  [] s1=5 -> internalOpRate:(s1'=0);
+
+  // 2.5. Invoke external service(s) for the Order operation
+  [] s1=6 -> OrderSucc*OrderRate:(s1'=7) + (1-OrderSucc)*OrderRate:(s1'=9);
+
+  // 2.6. Invoke internal component for the notification operation
+  [] s1=7 -> notifRate:(s1'=5);
+
+  // 3. Handle "fundamental analysis" request 
+  // 3.1. Invoke external service(s) for the Fundamental Analysis operation
+  [] s1=8 -> FASucc*FARate*pEnterTrade:(s1'=6) + FASucc*FARate*(1-pEnterTrade):(s1'=5) + (1-FASucc)*FARate:(s1'=9); 
+  
+  // 4. Done - unsuccessful outcome (invocation of external service failed)
+  [] s1=9 -> internalOpRate:(s1'=0);
+endmodule
+
+// Internal component Technical Analysis, instance 1
+module TA1
+  t1 : [0..1] init 0;
+  [TA1Invoke1] t1=0 -> internalOpRate:(t1'=1);
+  [TA1Exec1]   t1=1 -> ta1Rate:(t1'=0);
+endmodule
+
+rewards "MWcount"
+  [] s1=1 : 1;
+endrewards
+
+rewards "Notifcount"
+  [] s1=7 : 1;
+endrewards
+
+rewards "Alarmcount"
+  [] s1=4 : 1;
+endrewards
+
+rewards "FAcount"
+  [] s1=8 : 1;
+endrewards
+
+rewards "Ordercount"
+  [] s1=6 : 1;
+endrewards
+
+label "StatesForCount" = (s1=5|s1=9);
+
+label "MWTAOrNoPath" = (s1=0|s1=1|s1=2|s1=3|s1=6|s1=7);
+
+label "MWTAOrNoPath_END" = s1=7;
+
+label "MWTAalarmPath" = (s1=0|s1=1|s1=2|s1=4);
+
+label "MWTAalarmPath_END" = s1=4;
+
+label "FAOrNoPath" = (s1=0|s1=8|s1=6|s1=7);
+
+label "FAOrNoPath_END" = s1=7;
+
+rewards "served"
+  [ServeReq1] true : 1;
+endrewards
+
+rewards "extFails"
+  s1=9 : 1;
+endrewards
+
+rewards "extCompCost"
+  [] s1=1  : MWcost;
+  [] s1=6  : Ordercost;
+  [] s1=8  : FAcost;
+endrewards
+
+rewards "TAcost"
+  [TA1Invoke1] s1=2  : TAcost;
+endrewards
+
+rewards "overallCost"
+  [] s1=1  : MWcost;
+  [] s1=6  : Ordercost;
+  [] s1=8  : FAcost;
+  [TA1Invoke1] s1=2  : TAcost;
+endrewards
+
+rewards "processingTime"
+  s1>0 : 1;
+endrewards
+
+rewards "idle"
+  s1=0 : 1;
+endrewards
+
+rewards "qLen"
+  true : q;
+endrewards
+
+rewards "servedTA"
+  [TA1Invoke1] true : 1;
+endrewards
+
+rewards "taTime"
+  s1=2 : 1;
+  s1=3 : 1;
+endrewards
